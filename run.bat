@@ -1,0 +1,1 @@
+go run main.go -in="../ledean/picture/data" 
