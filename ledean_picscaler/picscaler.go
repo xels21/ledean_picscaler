@@ -17,6 +17,7 @@ type PicScaler struct {
 	pixelCount int
 	picNames   []string
 	isReadDone bool
+	picPrefix  string
 }
 
 func NewPicScaler(inDir string, outDirName string, pixelCount int) *PicScaler {
@@ -24,24 +25,29 @@ func NewPicScaler(inDir string, outDirName string, pixelCount int) *PicScaler {
 		inDir:      inDir,
 		outDir:     filepath.Join(inDir, outDirName),
 		pixelCount: pixelCount,
+		picPrefix:  "PoiPic_",
 	}
 
 	return &self
 }
 
 func (self *PicScaler) CreateController() {
-	output, err := os.Create(filepath.Join(self.outDir, "pictureController.go"))
+	output, err := os.Create(filepath.Join(self.outDir, "poipics.go"))
 	defer output.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Fprint(output, `package picture
+	fmt.Fprintf(output, `package poi
 
-var pics := []&image.NRGBA{`)
+import "image"
+
+var PixelCount = %d
+
+var PoiPics = []*image.NRGBA{`, self.pixelCount)
 	for _, picName := range self.picNames {
 		picNameWoExtension := RemoveFileExtension(picName)
-		fmt.Fprint(output, picNameWoExtension+", ")
+		fmt.Fprint(output, "&"+self.picPrefix+picNameWoExtension+", ")
 	}
 	fmt.Fprint(output, "}")
 }
@@ -89,7 +95,7 @@ func (self *PicScaler) ScaleSingleToPixel(picName string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	resized := imgconv.Resize(src, &imgconv.ResizeOption{Height: self.pixelCount})
+	resized := imgconv.Resize(src, &imgconv.ResizeOption{Width: self.pixelCount})
 
 	// Write the resulting image as TIFF.
 	outPath := RemoveFileExtension(picName) + ".tiff"
@@ -107,11 +113,11 @@ func (self *PicScaler) ScaleSingleToPixel(picName string) {
 }
 
 func NRGBAToGo(self *image.NRGBA) string {
-	return fmt.Sprintf(`&image.NRGBA{
-		Pix: []uint8{%s},
-		Stride: %d,
-		Rect: image.Rect(%d, %d, %d, %d),
-	}`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(self.Pix)), ", "), "[]"), self.Stride, self.Rect.Min.X, self.Rect.Min.Y, self.Rect.Max.X, self.Rect.Max.Y)
+	return fmt.Sprintf(`image.NRGBA{
+	Pix:    []uint8{%s},
+	Stride: %d,
+	Rect:   image.Rect(%d, %d, %d, %d),
+}`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(self.Pix)), ", "), "[]"), self.Stride, self.Rect.Min.X, self.Rect.Min.Y, self.Rect.Max.X, self.Rect.Max.Y)
 }
 
 func NRGBAToString(self *image.NRGBA) string {
@@ -154,16 +160,18 @@ func (self *PicScaler) ConvertToGo(resized *image.NRGBA, picName string) {
 	*/
 
 	picNameWoExtension := RemoveFileExtension(picName)
-	output, err := os.Create(filepath.Join(self.outDir, picNameWoExtension+".go"))
+	output, err := os.Create(filepath.Join(self.outDir, strings.ToLower(self.picPrefix)+picNameWoExtension+".go"))
 	defer output.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Fprint(output, `package picture
+	fmt.Fprint(output, `package poi
 
-import "ledean/color"
+import (
+	"image"
+)
 
-var `, picNameWoExtension, " := ", NRGBAToGo(resized))
+var `, self.picPrefix, picNameWoExtension, " = ", NRGBAToGo(resized))
 	// var `, picName, " := ", NRGBAToGo NRGBAToString(resized))
 }
