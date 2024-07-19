@@ -21,11 +21,12 @@ func TestPicScale(t *testing.T) {
 	// os.MkdirAll("/tmp/",FileMode)
 	picScaler := NewPicScaler(IN_PATH, OUT_NAME, pixelCount)
 	picScaler.Scale()
+	picScaler.CreateController()
 	entries, err := os.ReadDir(out)
 	if err != nil {
 		log.Fatal(err)
 	}
-	assert.Equal(t, 8, len(entries))
+	assert.Equal(t, 13, len(entries))
 	// assert.InDelta(t, expectedRgb.B, rgb.B, 1)
 }
 
@@ -37,7 +38,7 @@ func TestPicScaleSingle(t *testing.T) {
 	os.RemoveAll(out)
 	// os.MkdirAll("/tmp/",FileMode)
 	picScaler := NewPicScaler(IN_PATH, OUT_NAME, pixelCount)
-	picScaler.ScaleSingleToPixel("color_test.png")
+	picScaler.ScaleSingleToPixel("test_3x2.png")
 	entries, err := os.ReadDir(out)
 	if err != nil {
 		log.Fatal(err)

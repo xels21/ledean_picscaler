@@ -9,4 +9,5 @@ func main() {
 	parm := parameter.GetParameter()
 	picScaler := ledean_picscaler.NewPicScaler(parm.InDir, parm.OutDirName, parm.PixelCount)
 	picScaler.Scale()
+	picScaler.CreateController()
 }

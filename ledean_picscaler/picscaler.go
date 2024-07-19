@@ -29,6 +29,23 @@ func NewPicScaler(inDir string, outDirName string, pixelCount int) *PicScaler {
 	return &self
 }
 
+func (self *PicScaler) CreateController() {
+	output, err := os.Create(filepath.Join(self.outDir, "pictureController.go"))
+	defer output.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Fprint(output, `package picture
+
+var pics := []&image.NRGBA{`)
+	for _, picName := range self.picNames {
+		picNameWoExtension := RemoveFileExtension(picName)
+		fmt.Fprint(output, picNameWoExtension+", ")
+	}
+	fmt.Fprint(output, "}")
+}
+
 func (self *PicScaler) Scale() {
 	err := os.Mkdir(self.outDir, os.ModeDir)
 	if err != nil {
@@ -89,26 +106,16 @@ func (self *PicScaler) ScaleSingleToPixel(picName string) {
 	}
 }
 
-func (self *PicScaler) ConvertToGo(resized *image.NRGBA, picName string) {
-	/*
-		format is:
-		data.Pix -> Array R, G, B, A
-		data.Rect.Max.X -> col
-		data.Rect.Max.Y -> row
-	*/
+func NRGBAToGo(self *image.NRGBA) string {
+	return fmt.Sprintf(`&image.NRGBA{
+		Pix: []uint8{%s},
+		Stride: %d,
+		Rect: image.Rect(%d, %d, %d, %d),
+	}`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(self.Pix)), ", "), "[]"), self.Stride, self.Rect.Min.X, self.Rect.Min.Y, self.Rect.Max.X, self.Rect.Max.Y)
+}
 
-	output, err := os.Create(filepath.Join(self.outDir, RemoveFileExtension(picName)+".go"))
-	defer output.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Fprint(output, `
-	package picture
-
-	import "ledean/color"
-	
-	var `, picName, " = PicRGB{col: []PicCol{\n")
+func NRGBAToString(self *image.NRGBA) string {
+	ret := "PicRGB{col: []PicCol{\n"
 	// var pic_1 = PicRGB{col: []PicCol{PicCol{row: []color.RGB{
 	// color.RGB{R: 1, G: 1, B: 1},
 	// color.RGB{R: 1, G: 1, B: 1},
@@ -117,18 +124,46 @@ func (self *PicScaler) ConvertToGo(resized *image.NRGBA, picName string) {
 	// color.RGB{R: 1, G: 1, B: 1},
 	// color.RGB{R: 1, G: 1, B: 1},
 	// color.RGB{R: 1, G: 1, B: 1}},
-	// }}}
-	for y := range resized.Rect.Max.Y {
+	// }}}`+
+	for y := range self.Rect.Max.Y {
 		// output.Write("{\n")
-		fmt.Fprint(output, "PicCol{row:")
-		for x := range resized.Rect.Max.X {
-			off := y*resized.Rect.Max.X + x*4
-			fmt.Fprintf(output, " []color.RGB{%d,%d,%d},", resized.Pix[off], resized.Pix[off+1], resized.Pix[off+2])
+		// fmt.Fprint(output, "PicCol{row:")
+		ret += "	PicCol{row:"
+		for x := range self.Rect.Max.X {
+			off := y*self.Rect.Max.X*4 + x*4
+			// fmt.Fprintf(output, " []color.RGB{%d,%d,%d},", self.Pix[off], self.Pix[off+1], self.Pix[off+2])
+			ret += fmt.Sprintf(" []color.RGB{%d,%d,%d},", self.Pix[off], self.Pix[off+1], self.Pix[off+2])
 			// output.Write("{}")
 		}
 		// output.Write("\n},")
-		fmt.Fprint(output, "},\n")
+		// fmt.Fprint(output, "},\n")
+		ret += "},\n"
 
 	}
-	fmt.Fprint(output, "}}")
+	// fmt.Fprint(output, "}}")`
+	ret += "	}\n}"
+	return ret
+}
+
+func (self *PicScaler) ConvertToGo(resized *image.NRGBA, picName string) {
+	/*
+		format is:
+		data.Pix -> Array R, G, B, A
+		data.Rect.Max.X -> col
+		data.Rect.Max.Y -> row
+	*/
+
+	picNameWoExtension := RemoveFileExtension(picName)
+	output, err := os.Create(filepath.Join(self.outDir, picNameWoExtension+".go"))
+	defer output.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Fprint(output, `package picture
+
+import "ledean/color"
+
+var `, picNameWoExtension, " := ", NRGBAToGo(resized))
+	// var `, picName, " := ", NRGBAToGo NRGBAToString(resized))
 }
