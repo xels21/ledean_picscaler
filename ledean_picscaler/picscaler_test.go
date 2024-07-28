@@ -15,7 +15,7 @@ const OUT_NAME = "gen"
 func TestPicScale(t *testing.T) {
 	out := filepath.Join(IN_PATH, OUT_NAME)
 	// pixelCount := 4
-	pixelCount := 32
+	pixelCount := 50
 
 	os.RemoveAll(out)
 	// os.MkdirAll("/tmp/",FileMode)

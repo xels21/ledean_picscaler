@@ -14,7 +14,7 @@ func GetParameter() *Parameter {
 	var parm Parameter
 	flag.StringVar(&parm.InDir, "in", ".", "Path to directory of to cenverting pictures")
 	flag.IntVar(&parm.PixelCount, "pixelCount", 50, "Amount of pixel in one column")
-	flag.StringVar(&parm.OutDirName, "outName", "gen", "Name of output directory")
+	flag.StringVar(&parm.OutDirName, "outName", "gen_poi", "Name of output directory")
 	flag.Parse()
 	return &parm
 }
