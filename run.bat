@@ -1,1 +1,1 @@
-go run main.go -in="../ledean/picture/data" 
+go run main.go -in="poi" 
