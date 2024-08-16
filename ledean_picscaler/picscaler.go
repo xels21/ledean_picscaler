@@ -53,6 +53,7 @@ var PoiPics = []*image.NRGBA{`, self.pixelCount)
 }
 
 func (self *PicScaler) Scale() {
+	os.RemoveAll(self.outDir)
 	err := os.Mkdir(self.outDir, os.ModeDir)
 	if err != nil {
 		log.Fatal(err)
@@ -69,6 +70,9 @@ func (self *PicScaler) readInDir() {
 	for _, e := range entries {
 		switch filepath.Ext(e.Name()) {
 		case ".png", ".jpeg", ".jpg":
+			if strings.HasPrefix(e.Name(), "_") {
+				continue
+			}
 			self.picNames = append(self.picNames, e.Name())
 			log.Print("Found image: " + e.Name())
 		}
