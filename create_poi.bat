@@ -1,1 +1,1 @@
-go run main.go -in="poi" -pixelCount=50
+go run main.go -in="poi" -pixelCount=58
