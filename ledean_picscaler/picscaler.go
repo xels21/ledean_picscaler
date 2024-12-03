@@ -25,7 +25,7 @@ func NewPicScaler(inDir string, outDirName string, pixelCount int) *PicScaler {
 		inDir:      inDir,
 		outDir:     filepath.Join(inDir, outDirName),
 		pixelCount: pixelCount,
-		picPrefix:  "PoiPic_",
+		picPrefix:  "GetPoiPic_",
 	}
 
 	return &self
@@ -42,12 +42,16 @@ func (self *PicScaler) CreateController() {
 
 import "image"
 
+type GetPoiPic func() image.NRGBA
+
 var PixelCount = %d
 
-var PoiPics = []*image.NRGBA{`, self.pixelCount)
+var PoiPicsCount = %d
+
+var PoiPicsGetter = []GetPoiPic{`, self.pixelCount, len(self.picNames))
 	for _, picName := range self.picNames {
 		picNameWoExtension := RemoveFileExtension(picName)
-		fmt.Fprint(output, "&"+self.picPrefix+picNameWoExtension+", ")
+		fmt.Fprint(output, self.picPrefix+picNameWoExtension+", ")
 	}
 	fmt.Fprint(output, "}")
 }
@@ -176,6 +180,10 @@ import (
 	"image"
 )
 
-var `, self.picPrefix, picNameWoExtension, " = ", NRGBAToGo(resized))
+func `, self.picPrefix, picNameWoExtension, `() image.NRGBA {
+	return `, NRGBAToGo(resized), `
+}`)
+
+	// var `, self.picPrefix, picNameWoExtension, " = ", NRGBAToGo(resized))
 	// var `, picName, " := ", NRGBAToGo NRGBAToString(resized))
 }
