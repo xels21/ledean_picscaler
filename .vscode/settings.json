@@ -1,0 +1,8 @@
+{
+  		// "go.toolsEnvVars": {
+			// "GOOS": "windows",
+			// "GOARCH": "x64",
+			// "GOROOT": "C:\\Users\\00dea\\AppData\\Local\\tinygo\\goroot-7c90bddc51782c7bcdec041fab8c22ac12808edaeef5c2d593489ed3bfe1e7cf",
+			// "GOFLAGS": "-tags=tinygo.riscv,baremetal,linux,arm,tinygo.riscv32,esp32c3,esp,tinygo,purego,math_big_pure_go,gc.conservative,scheduler.tasks,serial.usb"
+		// },
+}

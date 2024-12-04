@@ -7,7 +7,7 @@ import (
 
 func main() {
 	parm := parameter.GetParameter()
-	picScaler := ledean_picscaler.NewPicScaler(parm.InDir, parm.OutDirName, parm.PixelCount)
+	picScaler := ledean_picscaler.NewPicScaler(parm.InDir, parm.OutDirName, parm.PixelCount, parm.AsByte)
 	picScaler.Scale()
 	picScaler.CreateController()
 }

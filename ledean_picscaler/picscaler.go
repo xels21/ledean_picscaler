@@ -18,14 +18,16 @@ type PicScaler struct {
 	picNames   []string
 	isReadDone bool
 	picPrefix  string
+	asBytes    bool
 }
 
-func NewPicScaler(inDir string, outDirName string, pixelCount int) *PicScaler {
+func NewPicScaler(inDir string, outDirName string, pixelCount int, asBytes bool) *PicScaler {
 	self := PicScaler{
 		inDir:      inDir,
 		outDir:     filepath.Join(inDir, outDirName),
 		pixelCount: pixelCount,
 		picPrefix:  "PoiPic_",
+		asBytes:    asBytes,
 	}
 
 	return &self
@@ -38,18 +40,32 @@ func (self *PicScaler) CreateController() {
 		log.Fatal(err)
 	}
 
-	fmt.Fprintf(output, `package poi
+	if !self.asBytes {
+
+		fmt.Fprintf(output, `package poi
 
 import "image"
 
 var PixelCount = %d
 
 var PoiPics = []*image.NRGBA{`, self.pixelCount)
-	for _, picName := range self.picNames {
-		picNameWoExtension := RemoveFileExtension(picName)
-		fmt.Fprint(output, "&"+self.picPrefix+picNameWoExtension+", ")
+		for _, picName := range self.picNames {
+			picNameWoExtension := RemoveFileExtension(picName)
+			fmt.Fprint(output, "&"+self.picPrefix+picNameWoExtension+", ")
+		}
+		fmt.Fprint(output, "}")
+	} else {
+		fmt.Fprintf(output, `package poi
+
+var PixelCount = %d
+
+var PoiPics = [][]string{`, self.pixelCount)
+		for _, picName := range self.picNames {
+			picNameWoExtension := RemoveFileExtension(picName)
+			fmt.Fprint(output, self.picPrefix+picNameWoExtension+", ")
+		}
+		fmt.Fprint(output, "}")
 	}
-	fmt.Fprint(output, "}")
 }
 
 func (self *PicScaler) Scale() {
@@ -124,6 +140,33 @@ func NRGBAToGo(self *image.NRGBA) string {
 }`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(self.Pix)), ", "), "[]"), self.Stride, self.Rect.Min.X, self.Rect.Min.Y, self.Rect.Max.X, self.Rect.Max.Y)
 }
 
+// func NRGBAToStringArray(self *image.NRGBA) string {
+// 	return fmt.Sprintf(`image.NRGBA{
+// 	Pix:    []uint8{%s},
+// 	Stride: %d,
+// 	Rect:   image.Rect(%d, %d, %d, %d),
+// }`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(self.Pix)), ", "), "[]"), self.Stride, self.Rect.Min.X, self.Rect.Min.Y, self.Rect.Max.X, self.Rect.Max.Y)
+// }
+
+func RgbaToRgbString(rgba []uint8, pixelPerRow int) string {
+	pixelCount := len(rgba) / 4
+	rowCount := pixelCount / pixelPerRow
+	pixelAsString := "[]string{"
+	for r := 0; r < rowCount; r++ {
+		pixelAsString += "\""
+		for i := 0; i < pixelPerRow; i++ {
+			pixelAsString += fmt.Sprintf("\\x%02x\\x%02x\\x%02x", rgba[r*pixelPerRow*4+i*4+0], rgba[r*pixelPerRow*4+i*4+1], rgba[r*pixelPerRow*4+i*4+2])
+			// pixelAsString += string(rgba[r*pixelPerRow*4+i*4 : r*pixelPerRow*4+i*4+3])
+		}
+		pixelAsString += "\","
+	}
+	return pixelAsString + "}"
+}
+
+func NRGBAToStringArray(self *image.NRGBA) string {
+	return RgbaToRgbString(self.Pix, self.Rect.Max.X-self.Rect.Min.X)
+}
+
 func NRGBAToString(self *image.NRGBA) string {
 	ret := "PicRGB{col: []PicCol{\n"
 	// var pic_1 = PicRGB{col: []PicCol{PicCol{row: []color.RGB{
@@ -170,12 +213,18 @@ func (self *PicScaler) ConvertToGo(resized *image.NRGBA, picName string) {
 		log.Fatal(err)
 	}
 
-	fmt.Fprint(output, `package poi
+	if !self.asBytes {
+		fmt.Fprint(output, `package poi
 
 import (
 	"image"
 )
 
 var `, self.picPrefix, picNameWoExtension, " = ", NRGBAToGo(resized))
-	// var `, picName, " := ", NRGBAToGo NRGBAToString(resized))
+		// var `, picName, " := ", NRGBAToGo NRGBAToString(resized))
+	} else {
+		fmt.Fprint(output, `package poi
+
+var `, self.picPrefix, picNameWoExtension, " = ", NRGBAToStringArray(resized))
+	}
 }

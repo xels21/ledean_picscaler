@@ -19,7 +19,7 @@ func TestPicScale(t *testing.T) {
 
 	os.RemoveAll(out)
 	// os.MkdirAll("/tmp/",FileMode)
-	picScaler := NewPicScaler(IN_PATH, OUT_NAME, pixelCount)
+	picScaler := NewPicScaler(IN_PATH, OUT_NAME, pixelCount, false)
 	picScaler.Scale()
 	picScaler.CreateController()
 	entries, err := os.ReadDir(out)
@@ -37,7 +37,7 @@ func TestPicScaleSingle(t *testing.T) {
 
 	os.RemoveAll(out)
 	// os.MkdirAll("/tmp/",FileMode)
-	picScaler := NewPicScaler(IN_PATH, OUT_NAME, pixelCount)
+	picScaler := NewPicScaler(IN_PATH, OUT_NAME, pixelCount, false)
 	picScaler.ScaleSingleToPixel("test_3x2.png")
 	entries, err := os.ReadDir(out)
 	if err != nil {
@@ -45,4 +45,16 @@ func TestPicScaleSingle(t *testing.T) {
 	}
 	assert.Equal(t, 2, len(entries))
 	// assert.InDelta(t, expectedRgb.B, rgb.B, 1)
+}
+
+func TestRgbaToRgbString(t *testing.T) {
+	input := []uint8{0x10, 0x11, 0x12, 0xFF, 0x20, 0x21, 0x22, 0xFF}
+
+	expected := "[]string{\"\\x10\\x11\\x12\\x20\\x21\\x22\",}"
+	actual := RgbaToRgbString(input, 2)
+	assert.Equal(t, expected, actual)
+
+	expected = "[]string{\"\\x10\\x11\\x12\",\"\\x20\\x21\\x22\",}"
+	actual = RgbaToRgbString(input, 1)
+	assert.Equal(t, expected, actual)
 }
