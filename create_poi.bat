@@ -1,1 +1,0 @@
-go run main.go -in="poi" -pixelCount=58 -asByte

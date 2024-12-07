@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/sunshineplan/imgconv"
@@ -13,59 +14,53 @@ import (
 
 type PicScaler struct {
 	inDir      string
-	outDir     string
 	pixelCount int
 	picNames   []string
 	isReadDone bool
-	picPrefix  string
 	asBytes    bool
+	name       string
+	outDir     string
 }
 
-func NewPicScaler(inDir string, outDirName string, pixelCount int, asBytes bool) *PicScaler {
+func NewPicScaler(inDir string, name string, pixelCount int, asBytes bool) *PicScaler {
 	self := PicScaler{
 		inDir:      inDir,
-		outDir:     filepath.Join(inDir, outDirName),
 		pixelCount: pixelCount,
-		picPrefix:  "PoiPic_",
 		asBytes:    asBytes,
+		name:       name,
+		outDir:     filepath.Join(inDir, "gen_"+name),
 	}
 
 	return &self
 }
 
 func (self *PicScaler) CreateController() {
-	output, err := os.Create(filepath.Join(self.outDir, "poipics.go"))
+	output, err := os.Create(filepath.Join(self.outDir, "pics_"+self.name+".go"))
 	defer output.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	fmt.Fprint(output, "package "+self.name+"\n\n")
 	if !self.asBytes {
-
-		fmt.Fprintf(output, `package poi
-
-import "image"
-
-var PixelCount = %d
-
-var PoiPics = []*image.NRGBA{`, self.pixelCount)
-		for _, picName := range self.picNames {
-			picNameWoExtension := RemoveFileExtension(picName)
-			fmt.Fprint(output, "&"+self.picPrefix+picNameWoExtension+", ")
-		}
-		fmt.Fprint(output, "}")
-	} else {
-		fmt.Fprintf(output, `package poi
-
-var PixelCount = %d
-
-var PoiPics = [][]string{`, self.pixelCount)
-		for _, picName := range self.picNames {
-			picNameWoExtension := RemoveFileExtension(picName)
-			fmt.Fprint(output, self.picPrefix+picNameWoExtension+", ")
-		}
-		fmt.Fprint(output, "}")
+		fmt.Fprint(output, "import \"image\"\n\n")
 	}
+	fmt.Fprint(output, "var PixelCount = "+strconv.Itoa(self.pixelCount)+"\n\n")
+
+	if self.asBytes {
+		fmt.Fprint(output, "var Pics = [][]string{")
+	} else {
+		fmt.Fprint(output, "var Pics = []*image.NRGBA{")
+	}
+	for _, picName := range self.picNames {
+		picNameWoExtension := RemoveFileExtension(picName)
+		if self.asBytes {
+			fmt.Fprint(output, "\n\t"+self.name+"_"+picNameWoExtension+",")
+		} else {
+			fmt.Fprint(output, "\n\t"+"&"+self.name+"_"+picNameWoExtension+",")
+		}
+	}
+	fmt.Fprint(output, "\n}\n")
 }
 
 func (self *PicScaler) Scale() {
@@ -153,14 +148,14 @@ func RgbaToRgbString(rgba []uint8, pixelPerRow int) string {
 	rowCount := pixelCount / pixelPerRow
 	pixelAsString := "[]string{"
 	for r := 0; r < rowCount; r++ {
-		pixelAsString += "\""
+		pixelAsString += "\n\t\""
 		for i := 0; i < pixelPerRow; i++ {
 			pixelAsString += fmt.Sprintf("\\x%02x\\x%02x\\x%02x", rgba[r*pixelPerRow*4+i*4+0], rgba[r*pixelPerRow*4+i*4+1], rgba[r*pixelPerRow*4+i*4+2])
 			// pixelAsString += string(rgba[r*pixelPerRow*4+i*4 : r*pixelPerRow*4+i*4+3])
 		}
 		pixelAsString += "\","
 	}
-	return pixelAsString + "}"
+	return pixelAsString + "\n}\n"
 }
 
 func NRGBAToStringArray(self *image.NRGBA) string {
@@ -207,24 +202,24 @@ func (self *PicScaler) ConvertToGo(resized *image.NRGBA, picName string) {
 	*/
 
 	picNameWoExtension := RemoveFileExtension(picName)
-	output, err := os.Create(filepath.Join(self.outDir, strings.ToLower(self.picPrefix)+picNameWoExtension+".go"))
+	output, err := os.Create(filepath.Join(self.outDir, strings.ToLower(self.name)+"_"+picNameWoExtension+".go"))
 	defer output.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	fmt.Fprint(output, "package "+self.name+"\n\n")
 	if !self.asBytes {
-		fmt.Fprint(output, `package poi
-
-import (
-	"image"
-)
-
-var `, self.picPrefix, picNameWoExtension, " = ", NRGBAToGo(resized))
-		// var `, picName, " := ", NRGBAToGo NRGBAToString(resized))
+		fmt.Fprint(output, `
+		import (
+			"image"
+		)
+	`)
+	}
+	fmt.Fprint(output, "var ", self.name, "_", picNameWoExtension, " = ")
+	if self.asBytes {
+		fmt.Fprint(output, NRGBAToStringArray(resized))
 	} else {
-		fmt.Fprint(output, `package poi
-
-var `, self.picPrefix, picNameWoExtension, " = ", NRGBAToStringArray(resized))
+		fmt.Fprint(output, NRGBAToGo(resized))
 	}
 }

@@ -10,7 +10,8 @@ import (
 )
 
 const IN_PATH = "./testdata"
-const OUT_NAME = "gen"
+const NAME = "gen"
+const OUT_NAME = "gen_" + NAME
 
 func TestPicScale(t *testing.T) {
 	out := filepath.Join(IN_PATH, OUT_NAME)
@@ -19,7 +20,7 @@ func TestPicScale(t *testing.T) {
 
 	os.RemoveAll(out)
 	// os.MkdirAll("/tmp/",FileMode)
-	picScaler := NewPicScaler(IN_PATH, OUT_NAME, pixelCount, false)
+	picScaler := NewPicScaler(IN_PATH, NAME, pixelCount, false)
 	picScaler.Scale()
 	picScaler.CreateController()
 	entries, err := os.ReadDir(out)
@@ -37,7 +38,7 @@ func TestPicScaleSingle(t *testing.T) {
 
 	os.RemoveAll(out)
 	// os.MkdirAll("/tmp/",FileMode)
-	picScaler := NewPicScaler(IN_PATH, OUT_NAME, pixelCount, false)
+	picScaler := NewPicScaler(IN_PATH, NAME, pixelCount, false)
 	picScaler.ScaleSingleToPixel("test_3x2.png")
 	entries, err := os.ReadDir(out)
 	if err != nil {
